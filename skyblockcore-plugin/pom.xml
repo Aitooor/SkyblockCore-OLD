@@ -21,6 +21,7 @@
             <groupId>online.nasgar</groupId>
             <artifactId>skyblockcore-api</artifactId>
             <version>0.0.1</version>
+            <scope>compile</scope>
         </dependency>
     </dependencies>
 </project>
