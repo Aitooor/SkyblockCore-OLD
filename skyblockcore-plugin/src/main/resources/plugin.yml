@@ -1,3 +1,5 @@
-main: online.nasgar.skyblockcore
+main: online.nasgar.skyblockcore.SkyblockPlugin
 name: SkyblockCore
 version: 1.0
+depend:
+  - NasgarCommons
