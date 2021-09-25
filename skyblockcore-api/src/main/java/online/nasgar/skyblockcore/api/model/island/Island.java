@@ -7,11 +7,12 @@ import java.util.UUID;
 
 public interface Island {
 
-    UUID getId();
+    UUID getIdentifier();
 
     World getWorld();
 
     LocationManager getHomes();
 
     IslandData data();
+
 }

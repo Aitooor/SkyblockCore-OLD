@@ -8,13 +8,13 @@ import java.util.UUID;
 
 public class SkyblockIsland implements Island {
 
-    private final UUID owner;
+    private final UUID identifier;
     private final World world;
     private final LocationManager homeManager;
     private final IslandData data;
 
     public SkyblockIsland(UUID id, World world, IslandData data) {
-        this.owner = Objects.requireNonNull(id, "id");
+        this.identifier = Objects.requireNonNull(id, "id");
         this.world = Objects.requireNonNull(world, "world");
         this.data = Objects.requireNonNull(data);
 
@@ -22,8 +22,8 @@ public class SkyblockIsland implements Island {
     }
 
     @Override
-    public UUID getId() {
-        return owner;
+    public UUID getIdentifier() {
+        return identifier;
     }
 
     @Override
