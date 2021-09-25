@@ -10,11 +10,11 @@ import java.util.concurrent.Executors;
 
 public interface Skyblock {
 
-    Executor SKYBLOCK_THREAD_POOL = Executors.newCachedThreadPool();
+    Executor SKYBLOCK_THREAD_POOL = Executors.newFixedThreadPool(5);
 
     SkyblockPlayerManager playerManager();
 
-    AdapterRegistry serializationRegistry();
+    AdapterRegistry adapterRegistry();
 
     JavaPlugin getPlugin();
 

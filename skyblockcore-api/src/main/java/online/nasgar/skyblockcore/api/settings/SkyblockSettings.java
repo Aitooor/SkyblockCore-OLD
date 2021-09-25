@@ -1,6 +1,7 @@
 package online.nasgar.skyblockcore.api.settings;
 
 import com.github.imthenico.repositoryhelper.core.repository.Repository;
+import com.github.imthenico.repositoryhelper.core.serialization.Adapter;
 import com.github.imthenico.repositoryhelper.json.JsonDataProcessor;
 import com.github.imthenico.repositoryhelper.sql.SQLDataProcessor;
 import com.github.imthenico.repositoryhelper.sql.SQLRepository;
@@ -12,18 +13,22 @@ import com.zaxxer.hikari.HikariDataSource;
 import online.nasgar.commons.configuration.Configuration;
 import online.nasgar.commons.registry.Registry;
 import online.nasgar.skyblockcore.api.Skyblock;
-import online.nasgar.skyblockcore.api.model.SkyblockPlayer;
-import online.nasgar.skyblockcore.api.model.island.Island;
+import online.nasgar.skyblockcore.api.model.SkyblockPlayerData;
+import online.nasgar.skyblockcore.api.model.island.IslandData;
 import online.nasgar.skyblockcore.api.util.MapSerializationWrapper;
+import online.nasgar.skyblockcore.api.util.SQLTableCreator;
 import org.bukkit.Bukkit;
 import org.bukkit.configuration.ConfigurationSection;
 
+import java.sql.Connection;
 import java.sql.SQLException;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 public class SkyblockSettings {
 
-    private String islandWorldTemplateName;
+    private String islandWorldTemplateName = "skyblock-is-template";
     private SQLQueryHelper sqlHandler;
     private final Configuration dataBaseFile;
     private Registry<String, SQLRepositoryData> repositoriesData;
@@ -35,7 +40,7 @@ public class SkyblockSettings {
             Skyblock skyblock
     ) {
         this.dataBaseFile = Objects.requireNonNull(configuration, "configuration");
-        this.skyblock = Objects.requireNonNull(skyblock, "plugin");
+        this.skyblock = Objects.requireNonNull(skyblock, "skyblock");
         UserData userData = userData(configuration);
 
         if (userData == null) {
@@ -43,16 +48,8 @@ public class SkyblockSettings {
             throw new UnsupportedOperationException("no specified mysql credential in config file");
         }
 
-        HikariDataSource dataSource = (HikariDataSource) userData.getHikariDataSource();
-
-        try {
-            this.sqlHandler = new SQLQueryHelper(dataSource.getConnection());
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
-
+        initConnection(userData);
         initRepositories();
-
     }
 
     public Configuration getDataBaseFile() {
@@ -77,12 +74,30 @@ public class SkyblockSettings {
     }
 
     private UserData userData(Configuration configuration) {
-        ConfigurationSection configurationSection = configuration.getConfigurationSection("database");
+        ConfigurationSection configurationSection = configuration.getConfigurationSection("credential");
 
         if (configurationSection == null)
             return null;
 
-        return new ConfigurationSerializableUserData(configuration.getValues(true));
+        Map<String, Object> objectMap = configurationSection.getValues(true);
+
+        return new ConfigurationSerializableUserData(objectMap);
+    }
+
+    private void initConnection(UserData userData) {
+        try {
+            HikariDataSource dataSource = (HikariDataSource) userData.getHikariDataSource();
+
+            Connection connection = dataSource.getConnection();
+            this.sqlHandler = new SQLQueryHelper(connection);
+
+            SQLTableCreator sqlTableCreator = new SQLTableCreator(sqlHandler);
+
+            sqlTableCreator.checkJsonTable("player_data");
+            sqlTableCreator.checkJsonTable("island_data");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     private void initRepositories() {
@@ -90,8 +105,16 @@ public class SkyblockSettings {
         this.repositories = new Registry<>();
 
         try {
-            for (String key : dataBaseFile.getConfigurationSection("repository-data").getKeys(false)) {
-                SQLRepositoryData data = getFromSection(key);
+            ConfigurationSection section = dataBaseFile.getConfigurationSection("repository-data");
+
+            if (section == null)
+                throw new UnsupportedOperationException("repository section is null");
+
+            Set<String> keys = section.getKeys(false);
+
+            for (String key : keys) {
+                ConfigurationSection section1 = section.getConfigurationSection(key);
+                SQLRepositoryData data = getFromSection(section1);
 
                 if (data != null) {
                     repositoriesData.registerEntity(key, data);
@@ -99,25 +122,30 @@ public class SkyblockSettings {
             }
 
             // essential repositories
+            Adapter<?> adapter = skyblock.adapterRegistry().findAdapter("gson");
+
             repositories.registerEntity("player-data", new SQLRepository<>(
-                    skyblock.serializationRegistry(),
+                    adapter,
                     new SQLDataProcessor<>(new JsonDataProcessor()),
-                    SkyblockPlayer.class,
-                    getSQLRepositoryData("player-data"))
-            );
+                    SkyblockPlayerData.class,
+                    getSQLRepositoryData("player-data"),
+                    Skyblock.SKYBLOCK_THREAD_POOL
+            ));
 
             repositories.registerEntity("island-data", new SQLRepository<>(
-                    skyblock.serializationRegistry(),
+                    adapter,
                     new SQLDataProcessor<>(new JsonDataProcessor()),
-                    Island.class,
-                    getSQLRepositoryData("island-data")
+                    IslandData.class,
+                    getSQLRepositoryData("island-data"),
+                    Skyblock.SKYBLOCK_THREAD_POOL
             ));
 
             repositories.registerEntity("configuration-fields", new SQLRepository<>(
-                    skyblock.serializationRegistry(),
+                    adapter,
                     new SQLDataProcessor<>(new JsonDataProcessor()),
                     Object.class,
-                    getSQLRepositoryData("configuration-fields")
+                    getSQLRepositoryData("configuration-fields"),
+                    Skyblock.SKYBLOCK_THREAD_POOL
             ));
 
         } catch (Exception e) {
@@ -126,9 +154,7 @@ public class SkyblockSettings {
         }
     }
 
-    private SQLRepositoryData getFromSection(String section) {
-        ConfigurationSection configurationSection = dataBaseFile.getConfigurationSection(section);
-
+    private SQLRepositoryData getFromSection(ConfigurationSection configurationSection) {
         if (configurationSection != null)
             return MapSerializationWrapper.newRepositoryData(sqlHandler, configurationSection.getValues(true));
 

@@ -8,17 +8,21 @@ import java.util.Objects;
 
 public class SkyblockPlayer {
 
-    private final PlayerProfileManager profileManager;
+    private final SkyblockPlayerData data;
 
-    public SkyblockPlayer(PlayerProfileManager profileManager) {
-        this.profileManager = Objects.requireNonNull(profileManager, "profileManager");
+    public SkyblockPlayer(SkyblockPlayerData skyblockPlayerData) {
+        this.data = Objects.requireNonNull(skyblockPlayerData);
     }
 
     public Player asBukkitPlayer() {
-        return Bukkit.getPlayer(profileManager.getOwnerId());
+        return Bukkit.getPlayer(profiles().getOwnerId());
     }
 
     public PlayerProfileManager profiles() {
-        return profileManager;
+        return data().profiles();
+    }
+
+    public SkyblockPlayerData data() {
+        return data;
     }
 }
