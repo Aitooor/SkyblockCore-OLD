@@ -37,6 +37,12 @@
                     </execution>
                 </executions>
                 <configuration>
+                    <relocations>
+                        <relocation>
+                            <pattern>me.fixeddev.commandflow</pattern>
+                            <shadedPattern>online.nasgar.me.fixeddev.commandflow</shadedPattern>
+                        </relocation>
+                    </relocations>
                     <createDependencyReducedPom>false</createDependencyReducedPom>
                 </configuration>
             </plugin>
