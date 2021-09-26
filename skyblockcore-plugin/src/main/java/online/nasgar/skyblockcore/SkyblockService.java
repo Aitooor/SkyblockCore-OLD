@@ -13,8 +13,9 @@ import com.grinderwolf.swm.plugin.SWMPlugin;
 import online.nasgar.commons.configuration.Configuration;
 import online.nasgar.skyblockcore.api.Skyblock;
 import online.nasgar.skyblockcore.api.listener.PlayerManagerListener;
-import online.nasgar.skyblockcore.api.loader.IslandLoader;
+import online.nasgar.skyblockcore.api.loader.SkyblockIslandCreator;
 import online.nasgar.skyblockcore.api.manager.SimpleSkyblockPlayerManager;
+import online.nasgar.skyblockcore.api.manager.SkyblockIslandManager;
 import online.nasgar.skyblockcore.api.manager.SkyblockPlayerManager;
 import online.nasgar.skyblockcore.api.model.SkyblockPlayerData;
 import online.nasgar.skyblockcore.api.model.island.IslandData;
@@ -89,9 +90,13 @@ public class SkyblockService implements Skyblock {
 
         return new SimpleSkyblockPlayerManager(
                 plugin,
-                new IslandLoader(loader, islandWorldTemplate, plugin, islandDataRepository),
                 playerDataRepository,
-                islandDataRepository
+                new SkyblockIslandManager(
+                        new SkyblockIslandCreator(loader, islandWorldTemplate, plugin, islandDataRepository),
+                        islandDataRepository,
+                        null
+                ),
+                Skyblock.SKYBLOCK_THREAD_POOL
         );
     }
 }

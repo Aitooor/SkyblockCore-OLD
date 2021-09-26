@@ -17,7 +17,6 @@ public class PlayerManagerListener implements Listener {
 
     @EventHandler
     public void onJoin(PlayerJoinEvent event) {
-        playerManager.loadPlayerAsync(event.getPlayer());
+        playerManager.loadPlayer(event.getPlayer());
     }
-
 }
