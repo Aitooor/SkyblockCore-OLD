@@ -5,10 +5,7 @@ import com.github.imthenico.repositoryhelper.core.serialization.SimpleAdapterReg
 import com.github.imthenico.repositoryhelper.core.serialization.registry.AdapterRegistry;
 import com.github.imthenico.repositoryhelper.json.gson.GsonAdapter;
 import com.google.gson.Gson;
-import com.grinderwolf.swm.api.exceptions.*;
 import com.grinderwolf.swm.api.loaders.SlimeLoader;
-import com.grinderwolf.swm.api.world.SlimeWorld;
-import com.grinderwolf.swm.api.world.properties.SlimePropertyMap;
 import com.grinderwolf.swm.plugin.SWMPlugin;
 import online.nasgar.commons.configuration.Configuration;
 import online.nasgar.skyblockcore.api.Skyblock;
@@ -23,7 +20,6 @@ import online.nasgar.skyblockcore.api.settings.SkyblockSettings;
 import org.bukkit.Bukkit;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.io.IOException;
 import java.util.Objects;
 
 public class SkyblockService implements Skyblock {
@@ -32,7 +28,6 @@ public class SkyblockService implements Skyblock {
     private final AdapterRegistry serializationRegistry;
     private final SkyblockSettings settings;
     private final JavaPlugin plugin;
-    private SlimeWorld islandWorldTemplate;
 
     public SkyblockService(Configuration mainConfig, JavaPlugin plugin) {
         this.plugin = Objects.requireNonNull(plugin);
@@ -71,20 +66,6 @@ public class SkyblockService implements Skyblock {
 
         SlimeLoader loader = swmPlugin.getLoader("mysql");
 
-        try {
-            islandWorldTemplate = swmPlugin.loadWorld(loader, settings.getIslandWorldTemplateName(), true, new SlimePropertyMap());
-        } catch (CorruptedWorldException | IOException | NewerFormatException | WorldInUseException e) {
-            e.printStackTrace();
-        } catch (UnknownWorldException e) {
-            try {
-                islandWorldTemplate = swmPlugin.createEmptyWorld(loader, settings.getIslandWorldTemplateName(), true, new SlimePropertyMap());
-
-                Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, () -> swmPlugin.generateWorld(islandWorldTemplate));
-            } catch (WorldAlreadyExistsException | IOException ex) {
-                ex.printStackTrace();
-            }
-        }
-
         Repository<SkyblockPlayerData> playerDataRepository = settings.getRepository("player-data");
         Repository<IslandData> islandDataRepository = settings.getRepository("island-data");
 
@@ -92,7 +73,7 @@ public class SkyblockService implements Skyblock {
                 plugin,
                 playerDataRepository,
                 new SkyblockIslandManager(
-                        new SkyblockIslandCreator(loader, islandWorldTemplate, plugin, islandDataRepository),
+                        new SkyblockIslandCreator(loader, plugin, islandDataRepository),
                         islandDataRepository,
                         null
                 ),

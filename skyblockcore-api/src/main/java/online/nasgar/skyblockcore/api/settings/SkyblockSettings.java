@@ -28,7 +28,6 @@ import java.util.Set;
 
 public class SkyblockSettings {
 
-    private String islandWorldTemplateName = "skyblock-is-template";
     private SQLQueryHelper sqlHandler;
     private final Configuration dataBaseFile;
     private Registry<String, SQLRepositoryData> repositoriesData;
@@ -58,10 +57,6 @@ public class SkyblockSettings {
 
     public SQLQueryHelper getSQLHandler() {
         return sqlHandler;
-    }
-
-    public String getIslandWorldTemplateName() {
-        return islandWorldTemplateName;
     }
 
     public SQLRepositoryData getSQLRepositoryData(String id) {

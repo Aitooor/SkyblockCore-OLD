@@ -23,7 +23,6 @@ import static online.nasgar.skyblockcore.api.util.Exceptions.bukkitDebug;
 public class SkyblockIslandCreator implements Loader<Island, UUID> {
 
     private final SlimeLoader loader;
-    private final SlimeWorld worldTemplate;
     private final JavaPlugin javaPlugin;
     private final Repository<IslandData> islandDataRepository;
     private final Map<String, SlimeWorld> cachedModelWorlds;
@@ -31,12 +30,10 @@ public class SkyblockIslandCreator implements Loader<Island, UUID> {
 
     public SkyblockIslandCreator(
             SlimeLoader loader,
-            SlimeWorld worldModel,
             JavaPlugin javaPlugin,
             Repository<IslandData> islandDataRepository
     ) {
         this.loader = Objects.requireNonNull(loader, "loader");
-        this.worldTemplate = Objects.requireNonNull(worldModel, "worldModel");
         this.javaPlugin = Objects.requireNonNull(javaPlugin);
         this.islandDataRepository = Objects.requireNonNull(islandDataRepository);
         this.cachedModelWorlds = new HashMap<>();
@@ -90,7 +87,7 @@ public class SkyblockIslandCreator implements Loader<Island, UUID> {
     }
 
     private SlimeWorld loadSlimeWorld(String worldName) throws CorruptedWorldException, NewerFormatException, WorldInUseException, UnknownWorldException, IOException {
-        return swmPlugin.loadWorld(loader, worldName, true, worldTemplate.getPropertyMap());
+        return swmPlugin.loadWorld(loader, worldName, true, new SlimePropertyMap());
     }
 
     private CompletableFuture<World> generate(SlimeWorld slimeWorld) {
@@ -124,7 +121,7 @@ public class SkyblockIslandCreator implements Loader<Island, UUID> {
             SlimeWorld worldModel = getSlimeWorld(toClone);
 
             if (worldModel != null)
-                return worldTemplate.clone(worldName, loader);
+                return worldModel.clone(worldName, loader);
         } catch (WorldAlreadyExistsException | IOException e) {
             e.printStackTrace();
         }
