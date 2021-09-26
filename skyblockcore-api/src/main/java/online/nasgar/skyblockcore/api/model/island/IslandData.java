@@ -21,4 +21,5 @@ public class IslandData {
     public LocationManager newHomesManager(World world) {
         return new SimpleLocationManager(world, homes);
     }
+
 }
