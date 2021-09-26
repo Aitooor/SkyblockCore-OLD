@@ -1,7 +1,7 @@
 package online.nasgar.skyblockcore.api.model.island;
 
 import online.nasgar.commons.util.LocationModel;
-import online.nasgar.skyblockcore.api.IslandTemplateBuilder;
+import online.nasgar.skyblockcore.api.builder.IslandTemplateBuilder;
 
 import java.util.Objects;
 

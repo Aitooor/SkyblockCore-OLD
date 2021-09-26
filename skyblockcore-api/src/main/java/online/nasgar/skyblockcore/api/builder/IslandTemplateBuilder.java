@@ -1,4 +1,4 @@
-package online.nasgar.skyblockcore.api;
+package online.nasgar.skyblockcore.api.builder;
 
 import online.nasgar.commons.util.LocationModel;
 import online.nasgar.skyblockcore.api.model.island.IslandTemplate;
