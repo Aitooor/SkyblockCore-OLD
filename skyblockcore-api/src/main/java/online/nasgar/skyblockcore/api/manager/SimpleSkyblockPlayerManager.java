@@ -4,12 +4,11 @@ import com.github.imthenico.repositoryhelper.core.repository.Repository;
 import online.nasgar.commons.profile.PlayerProfile;
 import online.nasgar.commons.profile.PlayerProfileManager;
 import online.nasgar.skyblockcore.api.event.PlayerDataLoadEvent;
-import online.nasgar.skyblockcore.api.loader.IslandLoader;
 import online.nasgar.skyblockcore.api.loader.Loader;
 import online.nasgar.skyblockcore.api.model.SkyblockPlayer;
 import online.nasgar.skyblockcore.api.model.SkyblockPlayerData;
 import online.nasgar.skyblockcore.api.model.island.Island;
-import online.nasgar.skyblockcore.api.model.island.IslandData;
+import online.nasgar.skyblockcore.api.model.island.IslandTemplate;
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.metadata.FixedMetadataValue;
@@ -21,84 +20,44 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.logging.Level;
+import java.util.concurrent.Executor;
 
 public class SimpleSkyblockPlayerManager implements SkyblockPlayerManager {
 
-    private final IslandLoader islandLoader;
-    private final Map<UUID, Island> cachedIslands;
+    private final IslandManager<UUID> delegate;
     private final Map<UUID, SkyblockPlayer> cachedPlayers;
     private final JavaPlugin plugin;
-    private final Repository<IslandData> islandDataRepository;
     private final Repository<SkyblockPlayerData> playerDataRepository;
+    private final Executor executor;
 
     public SimpleSkyblockPlayerManager(
             JavaPlugin plugin,
-            IslandLoader islandLoader,
             Repository<SkyblockPlayerData> playerDataRepository,
-            Repository<IslandData> islandDataRepository
+            IslandManager<UUID> delegate,
+            Executor executor
     ) {
-        this.islandLoader = Objects.requireNonNull(islandLoader, "islandLoader");
-        this.cachedIslands = new ConcurrentHashMap<>();
-        this.cachedPlayers = new ConcurrentHashMap<>();
         this.plugin = Objects.requireNonNull(plugin);
-        this.islandDataRepository = Objects.requireNonNull(islandDataRepository);
         this.playerDataRepository = Objects.requireNonNull(playerDataRepository);
+        this.delegate = Objects.requireNonNull(delegate);
+        this.cachedPlayers = new ConcurrentHashMap<>();
+        this.executor = executor;
     }
 
     @Override
-    public void loadIsland(UUID key) {
-        loadIslandAsync(key);
-    }
+    public CompletableFuture<SkyblockPlayer> loadPlayer(Player player) {
+        CompletableFuture<SkyblockPlayer> completableFuture = new CompletableFuture<>();
 
-    @Override
-    public CompletableFuture<Island> loadIslandAsync(UUID key) {
-        CompletableFuture<Island> completableFuture = new CompletableFuture<>();
-        if (cachedIslands.containsKey(key)) {
-            completableFuture.complete(getIsland(key));
+        completableFuture.whenComplete((skyblockPlayer, throwable) -> this.cachedPlayers.put(player.getUniqueId(), skyblockPlayer));
 
-            return completableFuture;
+        Runnable completion = () -> completableFuture.complete(load(player));
+
+        if (asyncModeEnabled()) {
+            executor.execute(completion);
+        } else {
+            completion.run();
         }
 
-        return islandLoader.loadWithAsyncSlimeWorldLoading(key).whenComplete(((island, throwable) -> cachedIslands.put(key, island)));
-    }
-
-    @Override
-    public Island getIsland(UUID key) {
-        return cachedIslands.get(key);
-    }
-
-    @Override
-    public Loader<Island, UUID> getIslandLoader() {
-        return islandLoader;
-    }
-
-    @Override
-    public void saveIslands() {
-        cachedIslands.forEach((uuid, island) -> islandDataRepository.save(uuid.toString(), island.data()));
-    }
-
-    @Override
-    public SkyblockPlayer loadPlayer(Player player) {
-        SkyblockPlayer found = get(player);
-
-        if (found == null) {
-            found = load(player);
-            loadIsland(found);
-            this.cachedPlayers.put(player.getUniqueId(), found);
-        }
-
-        return found;
-    }
-
-    @Override
-    public CompletableFuture<SkyblockPlayer> loadPlayerAsync(Player player) {
-        return CompletableFuture.supplyAsync(() -> loadPlayer(player))
-                .exceptionally((exc) -> {
-                    Bukkit.getLogger().log(Level.SEVERE, "An error has occurred while loading the player data", exc);
-                    return null;
-                })
-                .whenComplete((skyblockPlayer, throwable) -> this.cachedPlayers.put(player.getUniqueId(), skyblockPlayer));
+        return completableFuture;
     }
 
     @Override
@@ -126,7 +85,7 @@ public class SimpleSkyblockPlayerManager implements SkyblockPlayerManager {
 
         player.setMetadata("skyblock-player-model", new FixedMetadataValue(plugin, skyblockPlayer));
 
-        Bukkit.getPluginManager().callEvent(new PlayerDataLoadEvent(skyblockPlayer));
+        Bukkit.getPluginManager().callEvent(new PlayerDataLoadEvent(skyblockPlayer, asyncModeEnabled()));
         return skyblockPlayer;
     }
 
@@ -144,5 +103,60 @@ public class SimpleSkyblockPlayerManager implements SkyblockPlayerManager {
         return new SkyblockPlayerData(
                 new PlayerProfileManager(PlayerProfile.forDefaultUses(player))
         );
+    }
+
+    @Override
+    public CompletableFuture<Island> loadIsland(UUID key, boolean cache) {
+        return delegate.loadIsland(key, cache);
+    }
+
+    @Override
+    public Island getIsland(UUID key) {
+        return delegate.getIsland(key);
+    }
+
+    @Override
+    public CompletableFuture<Island> createIfAbsent(UUID key, String templateName) {
+        return delegate.createIfAbsent(key, templateName);
+    }
+
+    @Override
+    public Loader<Island, UUID> getIslandLoader() {
+        return delegate.getIslandLoader();
+    }
+
+    @Override
+    public CompletableFuture<Island> createIsland(UUID key, boolean cache) {
+        return delegate.createIsland(key, cache);
+    }
+
+    @Override
+    public CompletableFuture<Island> createIslandWithTemplate(UUID key, String templateName, boolean cache) {
+        return delegate.createIslandWithTemplate(key, templateName, cache);
+    }
+
+    @Override
+    public CompletableFuture<Island> createIslandWithTemplate(UUID key, IslandTemplate template, boolean cache) {
+        return delegate.createIslandWithTemplate(key, template, cache);
+    }
+
+    @Override
+    public void registerTemplate(IslandTemplate islandTemplate) {
+        delegate.registerTemplate(islandTemplate);
+    }
+
+    @Override
+    public IslandTemplate getTemplate(String templateName) {
+        return delegate.getTemplate(templateName);
+    }
+
+    @Override
+    public void saveIslands() {
+        delegate.saveIslands();
+    }
+
+    @Override
+    public boolean asyncModeEnabled() {
+        return executor != null;
     }
 }
