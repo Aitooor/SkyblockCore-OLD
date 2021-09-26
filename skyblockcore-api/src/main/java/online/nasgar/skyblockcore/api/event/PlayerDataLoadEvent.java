@@ -13,8 +13,8 @@ public class PlayerDataLoadEvent extends Event {
 
     private final SkyblockPlayer player;
 
-    public PlayerDataLoadEvent(SkyblockPlayer player) {
-        super(true);
+    public PlayerDataLoadEvent(SkyblockPlayer player, boolean async) {
+        super(async);
         this.player = Objects.requireNonNull(player, "player");
     }
 
@@ -34,6 +34,4 @@ public class PlayerDataLoadEvent extends Event {
     public static HandlerList getHandlerList() {
         return HANDLER_LIST;
     }
-
-
 }
