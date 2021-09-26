@@ -16,4 +16,19 @@
         <maven.compiler.target>8</maven.compiler.target>
     </properties>
 
+    <repositories>
+        <repository>
+            <url>https://maven.enginehub.org/repo/</url>
+            <id>enginehub-repo</id>
+        </repository>
+    </repositories>
+
+    <dependencies>
+        <dependency>
+            <groupId>com.sk89q.worldedit</groupId>
+            <artifactId>worldedit-bukkit</artifactId>
+            <version>7.2.6</version>
+            <scope>provided</scope>
+        </dependency>
+    </dependencies>
 </project>
