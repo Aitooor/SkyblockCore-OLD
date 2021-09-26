@@ -1,6 +1,7 @@
 package online.nasgar.skyblockcore.api.manager;
 
 import online.nasgar.commons.profile.PlayerProfile;
+import online.nasgar.skyblockcore.api.util.Asynchronous;
 import online.nasgar.skyblockcore.api.model.SkyblockPlayer;
 import online.nasgar.skyblockcore.api.model.island.Island;
 import org.bukkit.entity.Player;
@@ -10,11 +11,9 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 
-public interface SkyblockPlayerManager extends IslandManager<UUID> {
+public interface SkyblockPlayerManager extends IslandManager<UUID>, Asynchronous {
 
-    SkyblockPlayer loadPlayer(Player player);
-
-    CompletableFuture<SkyblockPlayer> loadPlayerAsync(Player player);
+    CompletableFuture<SkyblockPlayer> loadPlayer(Player player);
 
     boolean isCached(Player player);
 
@@ -27,7 +26,17 @@ public interface SkyblockPlayerManager extends IslandManager<UUID> {
 
         PlayerProfile playerProfile = skyblockPlayer.profiles().getProfileInUse();
 
-        loadIsland(playerProfile.getPlayerId());
+        loadIsland(playerProfile.getPlayerId(), true);
+    }
+
+    default CompletableFuture<Island> createIslandIfAbsent(SkyblockPlayer skyblockPlayer) {
+        return createIslandIfAbsent(skyblockPlayer, "default");
+    }
+
+    default CompletableFuture<Island> createIslandIfAbsent(SkyblockPlayer skyblockPlayer, String templateName) {
+        UUID uuid = skyblockPlayer.profiles().getProfileInUse().getProfileId();
+
+        return createIfAbsent(uuid, templateName);
     }
 
     default Island getPlayerIsland(SkyblockPlayer skyblockPlayer) {
