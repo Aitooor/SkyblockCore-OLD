@@ -18,6 +18,8 @@ public class IslandTemplateBuilder {
 
     public IslandTemplateBuilder setIslandSpawn(LocationModel islandSpawn) {
         this.islandSpawn = islandSpawn;
+
+        spawnWorldCheck();
         return this;
     }
 
@@ -28,10 +30,39 @@ public class IslandTemplateBuilder {
 
     public IslandTemplateBuilder setWorldModelName(String worldModelName) {
         this.worldModelName = worldModelName;
+
+        spawnWorldCheck();
         return this;
+    }
+
+    public LocationModel getIslandSpawn() {
+        return islandSpawn;
+    }
+
+    public String getWESchematicName() {
+        return WESchematicName;
+    }
+
+    public String getWorldModelName() {
+        return worldModelName;
     }
 
     public IslandTemplate build() {
         return new IslandTemplate(islandSpawn, WESchematicName, worldModelName, name);
+    }
+
+    private void spawnWorldCheck() {
+        if (worldModelName != null && islandSpawn != null) {
+            if (!islandSpawn.getWorldName().equals(worldModelName)) {
+                this.islandSpawn = new LocationModel(
+                    islandSpawn.getX(),
+                    islandSpawn.getY(),
+                    islandSpawn.getZ(),
+                    islandSpawn.getYaw(),
+                    islandSpawn.getPitch(),
+                    worldModelName
+                );
+            }
+        }
     }
 }
