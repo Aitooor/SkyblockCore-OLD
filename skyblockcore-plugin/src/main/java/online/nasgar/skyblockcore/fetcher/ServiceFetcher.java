@@ -36,19 +36,19 @@ public class ServiceFetcher<T, S extends T> extends BukkitRunnable {
 
             if (targetClass.equals(provider.getClass())) {
                 Bukkit.getLogger().log(Level.INFO, String.format( "Found provider (%s) for %s", targetClass.getName(), abstractionClass.getName()));
+                cancel();
+
                 if (action != null) {
                     action.accept((S) provider);
                 }
-                cancel();
             }
         }
 
         if (countdown.hasFinished()) {
             Bukkit.getLogger().log(Level.SEVERE, String.format("No provider (%s) found for %s service", targetClass.getName(), abstractionClass.getName()));
+            cancel();
             if (onFail != null)
                 onFail.run();
-
-            cancel();
         }
 
         countdown.run();
