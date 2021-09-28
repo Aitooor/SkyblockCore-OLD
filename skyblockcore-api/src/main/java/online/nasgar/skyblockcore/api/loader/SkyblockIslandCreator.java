@@ -6,11 +6,13 @@ import com.grinderwolf.swm.api.loaders.SlimeLoader;
 import com.grinderwolf.swm.api.world.SlimeWorld;
 import com.grinderwolf.swm.api.world.properties.SlimePropertyMap;
 import com.grinderwolf.swm.plugin.SWMPlugin;
+import online.nasgar.commons.util.LocationModel;
 import online.nasgar.skyblockcore.api.model.island.Island;
 import online.nasgar.skyblockcore.api.model.island.IslandData;
 import online.nasgar.skyblockcore.api.model.island.IslandTemplate;
 import online.nasgar.skyblockcore.api.model.island.SkyblockIsland;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.plugin.java.JavaPlugin;
 
@@ -51,7 +53,7 @@ public class SkyblockIslandCreator implements Loader<Island, UUID> {
             world = Bukkit.getWorld(worldName);
         }
 
-        return newIsland(uuid, world);
+        return newIsland(uuid, world, null);
     }
 
     public CompletableFuture<Island> prepareForAsyncLoad(UUID uuid) {
@@ -68,7 +70,7 @@ public class SkyblockIslandCreator implements Loader<Island, UUID> {
                 return completableFuture;
             }
 
-            futureWorldPromise.whenComplete((bukkitWorld, exc) -> completableFuture.complete(newIsland(uuid, bukkitWorld)));
+            futureWorldPromise.whenComplete((bukkitWorld, exc) -> completableFuture.complete(newIsland(uuid, bukkitWorld, null)));
         }
 
         return completableFuture.exceptionally(bukkitDebug());
@@ -146,13 +148,32 @@ public class SkyblockIslandCreator implements Loader<Island, UUID> {
         return slimeWorld;
     }
 
-    private Island newIsland(UUID params, World world) {
+    private Island newIsland(UUID params, World world, IslandTemplate template) {
         IslandData islandData = islandDataRepository.find(params.toString());
 
         if (islandData == null)
             islandData = createData();
 
-        return new SkyblockIsland(params, world, islandData);
+        SkyblockIsland island = new SkyblockIsland(params, world, islandData);
+
+        if (template != null) {
+            LocationModel islandSpawn = template.getIslandHome();
+
+            if (islandSpawn != null) {
+                island.getHomes().assignMainLocation(
+                        new Location(
+                                world,
+                                islandSpawn.getX(),
+                                islandSpawn.getY(),
+                                islandSpawn.getZ(),
+                                islandSpawn.getYaw(),
+                                islandSpawn.getPitch()
+                        )
+                );
+            }
+        }
+
+        return island;
     }
 
     private CompletableFuture<Island> createFromTemplate(UUID uuid, String finalName, IslandTemplate template) {
@@ -165,7 +186,7 @@ public class SkyblockIslandCreator implements Loader<Island, UUID> {
         world = world != null ? world : createEmptyWorld(finalName);
 
         generate(world)
-                .whenComplete((bukkitWorld, exc) -> completableFuture.complete(newIsland(uuid, bukkitWorld)));
+                .whenComplete((bukkitWorld, exc) -> completableFuture.complete(newIsland(uuid, bukkitWorld, template)));
 
         if (schematicName != null) {
             // paste structure
@@ -179,7 +200,7 @@ public class SkyblockIslandCreator implements Loader<Island, UUID> {
         SlimeWorld world = createEmptyWorld(finalName);
 
         generate(world)
-                .whenComplete((bukkitWorld, exc) -> completableFuture.complete(newIsland(uuid, bukkitWorld)));
+                .whenComplete((bukkitWorld, exc) -> completableFuture.complete(newIsland(uuid, bukkitWorld, null)));
 
         return completableFuture;
     }
