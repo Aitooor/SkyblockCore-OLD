@@ -54,6 +54,11 @@
             <id>glaremasters</id>
             <url>https://repo.glaremasters.me/repository/concuncan/</url>
         </repository>
+
+        <repository>
+            <id>unnamed-public</id>
+            <url>https://repo.unnamed.team/repository/unnamed-public/</url>
+        </repository>
     </repositories>
 
     <dependencies>
@@ -110,6 +115,12 @@
             <artifactId>repositoryhelper-sql</artifactId>
             <version>0.0.1</version>
             <scope>compile</scope>
+        </dependency>
+
+        <dependency>
+            <groupId>me.yushust.message</groupId>
+            <artifactId>core</artifactId>
+            <version>6.0.17</version>
         </dependency>
     </dependencies>
 </project>
