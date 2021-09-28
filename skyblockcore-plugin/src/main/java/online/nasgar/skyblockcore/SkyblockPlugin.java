@@ -2,12 +2,15 @@ package online.nasgar.skyblockcore;
 
 import me.fixeddev.commandflow.annotated.AnnotatedCommandTreeBuilderImpl;
 import me.fixeddev.commandflow.annotated.part.PartInjector;
+import me.fixeddev.commandflow.annotated.part.defaults.DefaultsModule;
 import me.fixeddev.commandflow.bukkit.BukkitCommandManager;
 import me.fixeddev.commandflow.bukkit.factory.BukkitModule;
 import online.nasgar.commons.configuration.Configuration;
 import online.nasgar.skyblockcore.api.Skyblock;
+import online.nasgar.skyblockcore.api.helper.IslandTemplateBuilderHelper;
 import online.nasgar.skyblockcore.api.manager.SkyblockPlayerManager;
 import online.nasgar.skyblockcore.command.CommandRegister;
+import online.nasgar.skyblockcore.command.IslandTemplateManagementCommand;
 import online.nasgar.skyblockcore.command.IslandCommand;
 import online.nasgar.skyblockcore.command.SkyblockCommandModule;
 import online.nasgar.skyblockcore.fetcher.ServiceFetcher;
@@ -43,12 +46,16 @@ public class SkyblockPlugin extends JavaPlugin {
 
         serviceFetcher.onFound((service) -> {
                     PartInjector partInjector = PartInjector.create();
+                    partInjector.install(new DefaultsModule());
                     partInjector.install(new BukkitModule());
                     partInjector.install(new SkyblockCommandModule(service.playerManager()));
 
                     CommandRegister commandRegister = new CommandRegister(new AnnotatedCommandTreeBuilderImpl(partInjector), new BukkitCommandManager("skyblock"));
 
                     commandRegister.registerCommandClass(new IslandCommand(service.playerManager()));
+                    commandRegister.registerCommandClass(new IslandTemplateManagementCommand(new IslandTemplateBuilderHelper(
+                            service.playerManager()
+                    )));
                 })
                 .onFail(() -> Bukkit.getPluginManager().disablePlugin(this));
 
